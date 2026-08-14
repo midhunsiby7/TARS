@@ -1,0 +1,75 @@
+{
+  "llm": [
+    {
+      "name": "Qwen-2.5-1.5B-Instruct-SmokeTest",
+      "architecture": "qwen2",
+      "purpose": "smoke_test",
+      "variants": [
+        {
+          "quantization": "Q4_K_M",
+          "filename": "qwen2.5-1.5b-instruct-q4_k_m.gguf"
+        }
+      ]
+    },
+    {
+      "name": "Qwen3.5-4B",
+      "architecture": "qwen2",
+      "purpose": "candidate",
+      "variants": [
+        {
+          "quantization": "Q4_K_M",
+          "filename": "qwen3.5-4b-instruct-Q4_K_M.gguf"
+        },
+        {
+          "quantization": "Q8_0",
+          "filename": "qwen3.5-4b-instruct-Q8_0.gguf"
+        }
+      ]
+    },
+    {
+      "name": "Qwen3-4B",
+      "architecture": "qwen2",
+      "purpose": "candidate",
+      "variants": [
+        {
+          "quantization": "Q4_K_M",
+          "filename": "Qwen3-4B-Instruct-2507-Q4_K_M.gguf"
+        }
+      ]
+    },
+    {
+      "name": "Gemma-4-E4B",
+      "architecture": "gemma",
+      "purpose": "candidate",
+      "variants": [
+        {
+          "quantization": "Q4_0",
+          "filename": "gemma-4-E4B-it-Q4_0.gguf"
+        }
+      ]
+    }
+  ],
+  "stt": [
+    {
+      "name": "Whisper-Base",
+      "filename": "ggml-base.en.bin"
+    }
+  ],
+  "tts": [
+    {
+      "name": "Piper-English",
+      "filename": "en_US-lessac-medium.onnx"
+    }
+  ],
+  "wakeword": [
+    {
+      "name": "Hey-TARS",
+      "filename": "hey_tars.onnx"
+    }
+  ],
+  "executables": {
+    "llama_server": "D:\\TARS\\tools\\llama\\llama-server.exe",
+    "whisper": "main.exe",
+    "piper": "piper.exe"
+  }
+}

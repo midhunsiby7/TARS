@@ -1,0 +1,32 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+
+# Native Binaries & Tools
+tools/
+*.exe
+*.dll
+
+# Models
+*.gguf
+*.bin
+*.pt
+*.safetensors
+*.onnx
+benchmark_models/
+
+# Logs & Telemetry
+*.log
+# Keep the markdown reports, but ignore massive JSON raw telemetry if it exists
+benchmark_results/**/*.json
+benchmark_results/**/llm/
+benchmark_results/**/stt/
+benchmark_results/**/tts/
+
+# OS
+.DS_Store
+Thumbs.db
