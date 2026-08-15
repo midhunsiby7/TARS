@@ -17,6 +17,19 @@ class RuntimeConfigManager:
 
     def _load_config(self):
         if not os.path.exists(self.config_path):
+            self.config["voice"] = {
+                "enabled": True,
+                "sample_rate": 16000,
+                "channels": 1,
+                "silence_threshold": 0.01,
+                "silence_duration": 1.5,
+                "max_recording_seconds": 10.0,
+                "stt_model": "tiny.en",
+                "stt_device": "cpu",
+                "tts_enabled": True,
+                "tts_rate": 150,
+                "tts_volume": 1.0
+            }
             self._save_config()
             return
 
@@ -43,6 +56,20 @@ class RuntimeConfigManager:
             if isinstance(data.get("db_path"), str) and data["db_path"]:
                 self.config["db_path"] = data["db_path"]
 
+            self.config["voice"] = data.get("voice", {
+                "enabled": True,
+                "sample_rate": 16000,
+                "channels": 1,
+                "silence_threshold": 0.01,
+                "silence_duration": 1.5,
+                "max_recording_seconds": 10.0,
+                "stt_model": "tiny.en",
+                "stt_device": "cpu",
+                "tts_enabled": True,
+                "tts_rate": 150,
+                "tts_volume": 1.0
+            })
+
         except Exception as e:
             print(f"[Warning] Failed to load {self.config_path}. Using safe defaults. Error: {e}")
 
@@ -66,3 +93,5 @@ class RuntimeConfigManager:
     def selected_model(self) -> str: return self.config["selected_model"]
     @property
     def db_path(self) -> str: return self.config["db_path"]
+    @property
+    def voice_config(self) -> dict: return self.config.get("voice", {})

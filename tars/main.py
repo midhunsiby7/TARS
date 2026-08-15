@@ -23,6 +23,7 @@ from tars.tools.personality_tools import GetPersonalityTool, SetPersonalityTool
 def main():
     parser = argparse.ArgumentParser(description="TARS Phase 2C Core Runtime")
     parser.add_argument("--fallback", action="store_true", help="Use fallback configuration instead of production")
+    parser.add_argument("--voice", action="store_true", help="Launch in Phase 2D voice mode (Push-to-talk)")
     args = parser.parse_args()
 
     # 1. Load Configurations
@@ -93,7 +94,12 @@ def main():
     # 3. Start Lifecycle
     try:
         if orchestrator.startup(offload_layers=offload_layers, port=port, context_size=context_size):
-            orchestrator.chat_loop()
+            if args.voice:
+                from tars.voice.controller import VoiceController
+                voice_controller = VoiceController(orchestrator, runtime_config.voice_config)
+                voice_controller.start_manual_loop()
+            else:
+                orchestrator.chat_loop()
     except KeyboardInterrupt:
         print("\n[TARS System] Received interrupt signal.")
         orchestrator.shutdown()
