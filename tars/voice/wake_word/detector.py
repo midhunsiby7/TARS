@@ -34,14 +34,13 @@ class OpenWakeWordDetector(WakeWordDetectorInterface):
         try:
             print(f"[WakeWord] Initializing OpenWakeWord model: {self.model_name}")
             
-            # If the model ends with .onnx, we assume it's a custom path
+            # If the model ends with .onnx or .tflite, we assume it's a custom path
             model_paths = None
-            if self.model_name.endswith(".onnx") and os.path.exists(self.model_name):
+            if (self.model_name.endswith(".onnx") or self.model_name.endswith(".tflite")) and os.path.exists(self.model_name):
                 model_paths = [self.model_name]
                 
             self.model = Model(
-                wakeword_models=model_paths if model_paths else [self.model_name],
-                inference_framework="onnx"
+                wakeword_models=model_paths if model_paths else [self.model_name]
             )
             self._running = True
             print("[WakeWord] Detector started.")
