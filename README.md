@@ -2,6 +2,28 @@
 
 TARS is a fully local/offline AI assistant project designed to sit between the user and their Windows laptop.
 
+## Phase 2E: Continuous Voice Mode (Wake Word)
+Phase 2E extends the local voice interface with a fully offline, continuous wake-word detector using `openwakeword`.
+
+**Start Continuous Mode:**
+```powershell
+python tars/main.py --voice --wake-word
+```
+1. TARS will enter `WAITING_FOR_WAKE_WORD` standby mode.
+2. Say the wake word to activate TARS.
+3. Speak your command, then TARS will process it and return to standby.
+
+**Important Note on the Wake Word Model:**
+By design, the configured identity of the system is "TARS". However, because `openwakeword` requires a specially trained ONNX model for custom words, the system temporarily defaults to a built-in pre-trained development placeholder model (e.g., `"hey_jarvis"`). 
+The CLI will clearly indicate which model is loaded. Once you train a custom `tars.onnx` model, place it in the `models/` folder and update `tars/config/runtime.json` to seamlessly replace the placeholder.
+
+### Voice Dependencies
+Ensure the voice dependencies are installed:
+```powershell
+pip install sounddevice numpy faster-whisper pyttsx3 psutil openwakeword
+```
+*(The wake word runs entirely on the CPU in sub-milliseconds to protect the LLM VRAM).*
+
 ## Phase 2B: Tool & System Control (Current)
 We have successfully upgraded TARS into an Agent with local tool-calling capabilities. TARS can now safely inspect the local system, open approved applications, and browse the web—without granting the LLM unrestricted shell execution.
 

@@ -19,6 +19,12 @@ class RuntimeConfigManager:
         if not os.path.exists(self.config_path):
             self.config["voice"] = {
                 "enabled": True,
+                "wake_word_enabled": True,
+                "wake_word": "TARS",
+                "wake_word_model": "hey_jarvis",
+                "wake_word_sensitivity": 0.5,
+                "wake_word_chunk_duration": 0.1,
+                "listen_timeout": 5.0,
                 "sample_rate": 16000,
                 "channels": 1,
                 "silence_threshold": 0.01,
@@ -58,6 +64,12 @@ class RuntimeConfigManager:
 
             self.config["voice"] = data.get("voice", {
                 "enabled": True,
+                "wake_word_enabled": True,
+                "wake_word": "TARS",
+                "wake_word_model": "hey_jarvis",
+                "wake_word_sensitivity": 0.5,
+                "wake_word_chunk_duration": 0.1,
+                "listen_timeout": 5.0,
                 "sample_rate": 16000,
                 "channels": 1,
                 "silence_threshold": 0.01,

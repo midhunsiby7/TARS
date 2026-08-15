@@ -8,6 +8,7 @@ from tars.voice.stt.whisper_backend import WhisperSTTBackend
 from tars.voice.tts.pyttsx3_backend import Pyttsx3TTSBackend
 from tars.voice.state import VoiceState
 from tars.core.orchestrator import TarsOrchestrator
+from tars.voice.wake_word.detector import OpenWakeWordDetector
 
 class VoiceController:
     def __init__(self, orchestrator: TarsOrchestrator, config: dict):
@@ -31,6 +32,11 @@ class VoiceController:
             volume=config.get("tts_volume", 1.0)
         )
         
+        self.wake_word_detector = OpenWakeWordDetector(
+            model_name=config.get("wake_word_model", "hey_jarvis"),
+            sensitivity=config.get("wake_word_sensitivity", 0.5)
+        )
+        
     def _transition(self, new_state: VoiceState):
         self.state = new_state
         print(f"[Voice] State -> {self.state.name}")
@@ -42,12 +48,8 @@ class VoiceController:
         print("Press ENTER to speak. Type 'exit' to quit.")
         print("="*50 + "\n")
         
-        # Pre-initialize models to avoid delay on first voice interaction
-        if not self.stt.initialize():
-            print("[Voice Fatal] STT failed to initialize. Voice mode unavailable.")
-            return
-        if not self.tts.initialize():
-            print("[Voice Fatal] TTS failed to initialize. Voice mode unavailable.")
+        if not self.stt.initialize() or not self.tts.initialize():
+            print("[Voice Fatal] Failed to initialize STT or TTS.")
             return
             
         while self.orchestrator.running:
@@ -62,27 +64,73 @@ class VoiceController:
                 break
                 
             self._process_single_utterance()
+
+    def start_continuous_loop(self):
+        """Continuous wake-word listening loop as per Phase 2E."""
+        print("\n" + "="*50)
+        print("TARS Voice Mode (Phase 2E - Continuous Activation)")
+        configured_identity = self.config.get("wake_word", "TARS")
+        current_model = self.config.get("wake_word_model", "hey_jarvis")
+        print(f"Configured Identity: {configured_identity}")
+        print(f"Loaded Wake Word Model: {current_model} (Temporary Development Placeholder)")
+        print(f"Say '{current_model}' to activate. Press Ctrl+C to quit.")
+        print("="*50 + "\n")
+        
+        if not self.wake_word_detector.start():
+            print("[Voice Fatal] Failed to initialize Wake Word Detector.")
+            return
+        if not self.stt.initialize() or not self.tts.initialize():
+            print("[Voice Fatal] Failed to initialize STT or TTS.")
+            return
+
+        chunk_duration = self.config.get("wake_word_chunk_duration", 0.1)
+
+        try:
+            while self.orchestrator.running:
+                self._transition(VoiceState.WAITING_FOR_WAKE_WORD)
+                
+                # Listen continuously for wake word
+                wake_word_detected = False
+                while self.orchestrator.running and not wake_word_detected:
+                    chunk = self.audio.record_chunk(chunk_duration)
+                    if len(chunk) > 0 and self.wake_word_detector.listen(chunk):
+                        wake_word_detected = True
+                
+                if not self.orchestrator.running:
+                    break
+                    
+                print(f"\n[Voice] Wake Word Detected!")
+                self._process_single_utterance()
+                
+        except (KeyboardInterrupt, EOFError):
+            print("\n[Voice] Shutting down continuous mode...")
+            self.orchestrator.running = False
             
+        self._transition(VoiceState.SHUTTING_DOWN)
+        self.wake_word_detector.stop()
+
     def _process_single_utterance(self):
         self._transition(VoiceState.LISTENING)
         print("Recording... (Speak now, auto-stops after silence)")
         
-        # A simple recording loop that stops after silence
         chunk_duration = 0.5
+        # Use listen_timeout to wait for user to speak after wake word
+        listen_timeout = self.config.get("listen_timeout", 5.0)
         max_duration = self.config.get("max_recording_seconds", 10.0)
         silence_duration_limit = self.config.get("silence_duration", 1.5)
         
         audio_chunks = []
         silence_accumulated = 0.0
         speech_started = False
+        time_elapsed = 0.0
         
-        # Record until silence threshold met after speech started, or max duration
         for _ in range(int(max_duration / chunk_duration)):
             chunk = self.audio.record_chunk(chunk_duration)
             if len(chunk) == 0:
                 break
                 
             audio_chunks.append(chunk)
+            time_elapsed += chunk_duration
             
             is_speech = self.vad.is_speech(chunk)
             if is_speech:
@@ -94,11 +142,14 @@ class VoiceController:
             if speech_started and silence_accumulated >= silence_duration_limit:
                 break
                 
-        if not audio_chunks:
+            if not speech_started and time_elapsed >= listen_timeout:
+                print("[Voice] Listen timeout reached. Returning to standby.")
+                return
+                
+        if not audio_chunks or not speech_started:
             print("[Voice] No audio captured.")
             return
             
-        # Import numpy here just for concatenation
         import numpy as np
         full_audio = np.concatenate(audio_chunks)
         
@@ -106,20 +157,19 @@ class VoiceController:
         transcription = self.stt.transcribe(full_audio, self.audio.sample_rate)
         
         if not transcription:
-            print("[Voice] Could not transcribe audio.")
+            print("[Voice] Empty transcription. Returning to standby.")
             return
             
         print(f"\nUser (Voice): {transcription}")
         
         self._transition(VoiceState.THINKING)
         
-        # Pass to orchestrator identically to text input
+        # Route explicitly into TarsOrchestrator securely
         self.orchestrator.session.add_user_message(transcription)
         if not self.orchestrator._execute_agent_loop():
             self._transition(VoiceState.ERROR)
             return
             
-        # Get the assistant's text response for TTS
         response_text = self._get_last_assistant_response()
         
         if response_text:

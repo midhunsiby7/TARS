@@ -24,6 +24,7 @@ def main():
     parser = argparse.ArgumentParser(description="TARS Phase 2C Core Runtime")
     parser.add_argument("--fallback", action="store_true", help="Use fallback configuration instead of production")
     parser.add_argument("--voice", action="store_true", help="Launch in Phase 2D voice mode (Push-to-talk)")
+    parser.add_argument("--wake-word", action="store_true", help="Enable continuous wake-word listening mode (Phase 2E)")
     args = parser.parse_args()
 
     # 1. Load Configurations
@@ -97,7 +98,10 @@ def main():
             if args.voice:
                 from tars.voice.controller import VoiceController
                 voice_controller = VoiceController(orchestrator, runtime_config.voice_config)
-                voice_controller.start_manual_loop()
+                if args.wake_word:
+                    voice_controller.start_continuous_loop()
+                else:
+                    voice_controller.start_manual_loop()
             else:
                 orchestrator.chat_loop()
     except KeyboardInterrupt:
