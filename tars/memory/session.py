@@ -1,5 +1,6 @@
 import json
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
+from tars.core.state import ConversationalState
 
 class SessionManager:
     """Manages the conversation context, system prompt, and sliding window truncation."""
@@ -9,13 +10,16 @@ class SessionManager:
         self.response_headroom = response_headroom
         self.system_prompt = system_prompt
         self.messages: List[Dict[str, Any]] = []
+        self.state = ConversationalState()
         
     def reset(self):
         """Clears the current conversation history."""
         self.messages = []
+        self.state.reset()
         
     def add_user_message(self, content: str):
         self.messages.append({"role": "user", "content": content})
+        self.state.increment_turn()
         self.trim_to_context()
         
     def add_assistant_message(self, content: str):
@@ -25,18 +29,28 @@ class SessionManager:
     def add_assistant_tool_calls(self, tool_calls: List[Dict[str, Any]]):
         """Adds an assistant message representing a tool call request."""
         self.messages.append({"role": "assistant", "content": None, "tool_calls": tool_calls})
+        if tool_calls:
+            first_call = tool_calls[0]
+            func = first_call.get("function", {})
+            self.state.record_tool_call(func.get("name", "unknown"), func.get("arguments", "{}"))
         self.trim_to_context()
 
     def add_tool_result(self, tool_call_id: str, content: str):
         """Adds a tool message containing the execution result."""
         self.messages.append({"role": "tool", "content": content, "tool_call_id": tool_call_id})
+        self.state.record_tool_result(content)
         self.trim_to_context()
 
     def get_messages(self) -> List[Dict[str, Any]]:
-        """Returns the full conversation payload including the system prompt."""
-        payload = [{"role": "system", "content": self.system_prompt}]
-        payload.extend(self.messages)
-        return payload
+        """Returns the full message history formatted for the LLM."""
+        sys_msg = self.system_prompt
+        state_context = self.state.to_prompt_context()
+        if state_context:
+            sys_msg += "\n\n" + state_context
+            
+        final_msgs = [{"role": "system", "content": sys_msg}]
+        final_msgs.extend(self.messages)
+        return final_msgs
 
     def _estimate_tokens(self, text: str) -> int:
         """Conservative token estimation heuristic. (approx 1.3 tokens per word)"""

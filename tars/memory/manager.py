@@ -3,8 +3,9 @@ from .storage import MemoryStorage
 from .models import Memory
 
 class MemoryManager:
-    def __init__(self, db_path: str):
+    def __init__(self, db_path: str, config: Optional[dict] = None):
         self.storage = MemoryStorage(db_path)
+        self.config = config or {}
 
     def remember(self, category: str, key: str, content: str, importance: float = 0.5, source: str = "user") -> Memory:
         # Check if exists to update or create
@@ -23,7 +24,7 @@ class MemoryManager:
         return self.storage.list_all(limit=limit)
 
     def retrieve_relevant_memories(self, query: str = "", category: Optional[str] = None, limit: int = 5) -> List[Memory]:
-        return self.storage.search(query, category, limit)
+        return self.storage.search(query, category, limit, self.config)
 
     def format_memories_for_context(self, memories: List[Memory]) -> str:
         """

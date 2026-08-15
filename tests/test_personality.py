@@ -38,8 +38,8 @@ class TestPersonality(unittest.TestCase):
     def test_prompt_generation(self):
         self.manager.update_profile({"humor": 90, "honesty": 90})
         prompt = self.manager.get_personality_prompt()
-        self.assertIn("Humor:", prompt)
-        self.assertIn("Directness:", prompt)
+        self.assertIn("- Humor:", prompt)
+        self.assertIn("- Honesty:", prompt)
 
 if __name__ == '__main__':
     unittest.main()

@@ -95,7 +95,7 @@ class MemoryStorage:
         finally:
             conn.close()
 
-    def search(self, query: str = "", category: Optional[str] = None, limit: int = 10) -> List[Memory]:
+    def search(self, query: str = "", category: Optional[str] = None, limit: int = 10, config: Optional[dict] = None) -> List[Memory]:
         conn = self._get_conn()
         try:
             with conn:
@@ -116,12 +116,68 @@ class MemoryStorage:
                 if conditions:
                     sql += " WHERE " + " AND ".join(conditions)
                     
-                sql += " ORDER BY importance DESC, updated_at DESC LIMIT ?"
-                params.append(limit)
+                # Fetch more than the limit so we can rank them in memory
+                # If no query, just fallback to standard DB sort
+                if not query:
+                    sql += " ORDER BY importance DESC, updated_at DESC LIMIT ?"
+                    params.append(limit)
+                else:
+                    # Fetch a generous candidate pool to score in python
+                    sql += " LIMIT 200"
                 
                 cursor.execute(sql, params)
                 rows = cursor.fetchall()
-                return [Memory(*row) for row in rows]
+                memories = [Memory(*row) for row in rows]
+                
+                if not query:
+                    return memories
+                    
+                # Intelligent Ranking
+                if config is None:
+                    config = {}
+                weights = config.get("ranking_weights", {
+                    "lexical_relevance": 1.0,
+                    "importance": 2.0,
+                    "recency": 1.5,
+                    "category_match": 1.0
+                })
+                
+                query_lower = query.lower()
+                query_tokens = set(query_lower.split())
+                now = datetime.now()
+                
+                def score_memory(mem: Memory) -> float:
+                    score = 0.0
+                    content_lower = mem.content.lower()
+                    key_lower = mem.key.lower()
+                    
+                    # 1. Lexical Relevance (exact substring match gives high score, token overlap gives partial)
+                    if query_lower in key_lower:
+                        score += 2.0 * weights["lexical_relevance"]
+                    elif query_lower in content_lower:
+                        score += 1.0 * weights["lexical_relevance"]
+                        
+                    content_tokens = set(content_lower.split())
+                    overlap = len(query_tokens.intersection(content_tokens))
+                    score += (overlap * 0.2) * weights["lexical_relevance"]
+                    
+                    # 2. Importance
+                    score += mem.importance * weights["importance"]
+                    
+                    # 3. Recency (exponential decay based on days old)
+                    days_old = (now - mem.updated_at).days
+                    recency_factor = max(0.0, 1.0 - (days_old / 30.0)) # decay to 0 over 30 days
+                    score += recency_factor * weights["recency"]
+                    
+                    # 4. Category Match (if requested category matched exactly, already handled by SQL,
+                    # but if we are ranking a general search, we might prefer certain categories)
+                    if category and mem.category == category:
+                        score += 1.0 * weights["category_match"]
+                        
+                    return score
+
+                memories.sort(key=score_memory, reverse=True)
+                return memories[:limit]
         finally:
             conn.close()
 

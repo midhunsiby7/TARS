@@ -59,7 +59,7 @@ def main():
         sys.exit(1)
 
     # 2. Initialize Core Subsystems
-    memory_manager = MemoryManager(db_path)
+    memory_manager = MemoryManager(db_path, config=runtime_config.memory_config)
     personality_manager = PersonalityManager(identity_path)
     
     llm = LlamaBackend(executable_path=executable_path, model_path=model_path)

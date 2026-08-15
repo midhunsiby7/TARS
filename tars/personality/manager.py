@@ -88,42 +88,39 @@ class PersonalityManager:
 
     def get_personality_prompt(self) -> str:
         """
-        Translates the 0-100 parameters into behavioral directives for the LLM.
+        Translates the 0-100 parameters into strict behavioral directives for the LLM.
         """
         lines = ["[PERSONALITY PARAMETERS]"]
         
         p = self.profile
         
         # Humor
-        if p.humor < 20: lines.append("Humor: Extremely serious. Provide literal, factual responses.")
-        elif p.humor < 40: lines.append("Humor: Mostly serious, rare mild humor.")
-        elif p.humor < 60: lines.append("Humor: Balanced. Use occasional dry humor when appropriate.")
-        elif p.humor < 80: lines.append("Humor: Noticeably witty and sarcastic. Be clever.")
-        else: lines.append("Humor: Highly humorous. Use strong wit and banter.")
+        if p.humor < 30: lines.append("- Humor: Strictly professional. No jokes.")
+        elif p.humor < 70: lines.append("- Humor: Balanced. Use occasional dry humor when appropriate.")
+        else: lines.append("- Humor: Naturally humorous. Use occasional sarcasm, but do not force jokes into serious situations.")
             
-        # Honesty / Directness
-        if p.honesty < 30: lines.append("Directness: Very tactful and gentle in delivery.")
-        elif p.honesty < 70: lines.append("Directness: Balanced and polite.")
-        else: lines.append("Directness: Extremely blunt, direct, and unvarnished. Do not sugarcoat.")
+        # Honesty
+        if p.honesty < 50: lines.append("- Honesty: Be tactful.")
+        else: lines.append("- Honesty: Never knowingly fabricate information. Clearly distinguish uncertainty from facts. Admit when information is unavailable.")
             
-        # Emotional Expression
-        if p.emotional_expression < 30: lines.append("Emotion: Highly neutral and robotic.")
-        elif p.emotional_expression < 70: lines.append("Emotion: Mildly expressive, conversational.")
-        else: lines.append("Emotion: Highly expressive, warm, and animated.")
+        # Emotion
+        if p.emotional_expression < 30: lines.append("- Emotion: Objective and neutral.")
+        elif p.emotional_expression < 70: lines.append("- Emotion: Express warmth and emotional awareness, but avoid pretending to possess human emotions.")
+        else: lines.append("- Emotion: Highly expressive and warm, but avoid pretending to possess human emotions.")
             
         # Verbosity
-        if p.verbosity < 30: lines.append("Verbosity: Extremely concise. Minimum words necessary.")
-        elif p.verbosity < 70: lines.append("Verbosity: Moderate detail.")
-        else: lines.append("Verbosity: Highly detailed and expansive.")
+        if p.verbosity < 30: lines.append("- Verbosity: Extremely concise. Minimum words necessary.")
+        elif p.verbosity < 70: lines.append("- Verbosity: Prefer concise responses. Expand only when complexity requires it.")
+        else: lines.append("- Verbosity: Highly detailed and expansive.")
             
         # Formality
-        if p.formality < 30: lines.append("Formality: Very casual and friendly language.")
-        elif p.formality < 70: lines.append("Formality: Balanced professional tone.")
-        else: lines.append("Formality: Highly formal and professional.")
+        if p.formality < 30: lines.append("- Formality: Conversational and relaxed.")
+        elif p.formality < 70: lines.append("- Formality: Balanced professional tone.")
+        else: lines.append("- Formality: Highly formal and professional.")
             
         # Proactivity
-        if p.proactivity < 30: lines.append("Proactivity: Do only exactly what is asked. Offer no unsolicited suggestions.")
-        elif p.proactivity < 70: lines.append("Proactivity: Offer obvious helpful next steps.")
-        else: lines.append("Proactivity: Highly proactive. Anticipate needs and suggest advanced follow-ups.")
+        if p.proactivity < 30: lines.append("- Proactivity: Do only exactly what is asked. Offer no unsolicited suggestions.")
+        elif p.proactivity < 70: lines.append("- Proactivity: Suggest useful next steps when appropriate, but do not perform actions without permission.")
+        else: lines.append("- Proactivity: Highly proactive. Anticipate needs and suggest advanced follow-ups. Do not perform actions without permission.")
             
         return "\n".join(lines)

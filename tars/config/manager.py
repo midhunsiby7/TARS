@@ -36,6 +36,15 @@ class RuntimeConfigManager:
                 "tts_rate": 150,
                 "tts_volume": 1.0
             }
+            self.config["memory"] = {
+                "ranking_weights": {
+                    "lexical_relevance": 1.0,
+                    "importance": 2.0,
+                    "recency": 1.5,
+                    "category_match": 1.0
+                },
+                "max_retrieved": 5
+            }
             self._save_config()
             return
 
@@ -81,6 +90,16 @@ class RuntimeConfigManager:
                 "tts_rate": 150,
                 "tts_volume": 1.0
             })
+            
+            self.config["memory"] = data.get("memory", {
+                "ranking_weights": {
+                    "lexical_relevance": 1.0,
+                    "importance": 2.0,
+                    "recency": 1.5,
+                    "category_match": 1.0
+                },
+                "max_retrieved": 5
+            })
 
         except Exception as e:
             print(f"[Warning] Failed to load {self.config_path}. Using safe defaults. Error: {e}")
@@ -107,3 +126,5 @@ class RuntimeConfigManager:
     def db_path(self) -> str: return self.config["db_path"]
     @property
     def voice_config(self) -> dict: return self.config.get("voice", {})
+    @property
+    def memory_config(self) -> dict: return self.config.get("memory", {})
