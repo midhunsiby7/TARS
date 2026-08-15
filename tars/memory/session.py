@@ -63,13 +63,22 @@ class SessionManager:
         max_allowed = self.context_size - self.response_headroom
         
         while self.messages and self._calculate_total_tokens() > max_allowed:
-            # We want to remove pairs to maintain logical flow, but sometimes they aren't perfectly paired.
-            # Pop the oldest message.
             popped = self.messages.pop(0)
             
-            # If we just popped a user message, and the next is an assistant response, pop that too to keep history clean.
+            # If we popped a user message, pop the corresponding assistant message too
             if popped["role"] == "user" and self.messages and self.messages[0]["role"] == "assistant":
-                # Only pop if it's not a tool call request, to avoid breaking tool call logic blindly,
-                # though ideally we should clean up orphan tool calls too.
-                if not self.messages[0].get("tool_calls"):
+                popped_assistant = self.messages.pop(0)
+                # If that assistant message had tool calls, we must also pop the tool results
+                if popped_assistant.get("tool_calls"):
+                    while self.messages and self.messages[0]["role"] == "tool":
+                        self.messages.pop(0)
+                        
+            # If we just popped an assistant message that had tool calls, pop the results
+            elif popped["role"] == "assistant" and popped.get("tool_calls"):
+                while self.messages and self.messages[0]["role"] == "tool":
+                    self.messages.pop(0)
+                    
+            # If we somehow popped a tool result (maybe left over), keep popping if there are more
+            elif popped["role"] == "tool":
+                while self.messages and self.messages[0]["role"] == "tool":
                     self.messages.pop(0)
