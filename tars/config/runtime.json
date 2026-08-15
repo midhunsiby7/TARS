@@ -1,0 +1,8 @@
+{
+    "production_gpu_layers": 28,
+    "fallback_gpu_layers": 15,
+    "context_size": 2048,
+    "server_port": 8080,
+    "selected_model": "Qwen3-4B",
+    "db_path": "data/tars/memory.db"
+}
