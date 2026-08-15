@@ -18,8 +18,13 @@ DEFAULT_SYSTEM_PROMPT = (
     "Do not fabricate capabilities; you currently only have access to text chatting."
 )
 
+from tars.tools.registry import ToolRegistry
+from tars.tools.permissions import PermissionManager, PermissionCategory
+from tars.tools.system_tools import register_system_tools
+from tars.tools.action_tools import register_action_tools
+
 def main():
-    parser = argparse.ArgumentParser(description="TARS Phase 2A Core Runtime")
+    parser = argparse.ArgumentParser(description="TARS Phase 2B Core Runtime")
     parser.add_argument("--fallback", action="store_true", help="Use 15-layer fallback configuration instead of 28")
     parser.add_argument("--port", type=int, default=8080, help="Local port for llama-server")
     parser.add_argument("--context-size", type=int, default=2048, help="Context window size in tokens")
@@ -50,7 +55,7 @@ def main():
         print(f"[Fatal] Could not locate llama-server.exe at {executable_path}")
         sys.exit(1)
 
-    # 2. Initialize Core Components
+    # 2. Initialize Core Components & Tools
     llm = LlamaBackend(executable_path=executable_path, model_path=model_path)
     session = SessionManager(
         context_size=context_size,
@@ -58,7 +63,12 @@ def main():
         response_headroom=512
     )
     
-    orchestrator = TarsOrchestrator(llm=llm, session=session)
+    permission_manager = PermissionManager(max_allowed=PermissionCategory.SAFE_ACTION)
+    tool_registry = ToolRegistry(permission_manager)
+    register_system_tools(tool_registry)
+    register_action_tools(tool_registry)
+    
+    orchestrator = TarsOrchestrator(llm=llm, session=session, tool_registry=tool_registry)
     
     # 3. Start Lifecycle
     try:

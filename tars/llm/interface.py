@@ -29,12 +29,13 @@ class LLMInterface(abc.ABC):
         
         Args:
             messages: List of message dictionaries containing "role" and "content"
-            tools: Optional list of tool definitions
+            tools: Optional list of tool definitions (OpenAI JSON schema format)
             
         Returns:
             A dictionary containing:
             - status: "success" or "failed"
-            - content: The text response (if successful)
+            - content: The text response (if successful, might be empty if tools are called)
+            - tool_calls: A list of tool calls (if the model requested any)
             - error: The error message (if failed)
             - fatal: Boolean indicating if this is an irrecoverable backend failure
         """

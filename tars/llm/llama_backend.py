@@ -140,7 +140,8 @@ class LlamaBackend(LLMInterface):
                 message = data.get("choices", [{}])[0].get("message", {})
                 return {
                     "status": "success",
-                    "content": message.get("content", ""),
+                    "content": message.get("content", "") or "",
+                    "tool_calls": message.get("tool_calls", []),
                     "fatal": False
                 }
             else:
